@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Pencil } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
 
 interface EditableFieldProps {
   value: string;
@@ -14,6 +16,7 @@ interface EditableFieldProps {
   type?: 'text' | 'textarea' | 'datetime-local';
   icon?: React.ReactNode;
   className?: string;
+  displayFormat?: string;
 }
 
 export function EditableField({
@@ -22,11 +25,25 @@ export function EditableField({
   label,
   type = 'text',
   icon,
-  className = ''
+  className = '',
+  displayFormat,
 }: EditableFieldProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedValue, setEditedValue] = useState(value);
   const [isLoading, setIsLoading] = useState(false);
+  const [displayValue, setDisplayValue] = useState('');
+
+  useEffect(() => {
+    if (type === 'datetime-local' && value) {
+      setDisplayValue(format(new Date(value), displayFormat || 'PPP', { locale: pl }));
+    } else {
+      setDisplayValue(value || '');
+    }
+  }, [value, type, displayFormat]);
+
+  useEffect(() => {
+    setEditedValue(value);
+  }, [value]);
 
   const handleSave = async () => {
     if (editedValue === value) {
@@ -49,21 +66,24 @@ export function EditableField({
 
   if (isEditing) {
     return (
-      <div className={`flex items-center gap-2 ${className}`}>
+      <div className={`w-full ${className}`}>
         {icon && <span className="text-blue-500">{icon}</span>}
         {type === 'textarea' ? (
-          <Textarea
-            value={editedValue}
-            onChange={(e) => setEditedValue(e.target.value)}
-            className="min-w-[300px]"
-            autoFocus
-          />
+          <div className="w-full mb-2">
+            <textarea
+              value={editedValue}
+              onChange={(e) => setEditedValue(e.target.value)}
+              className="w-full min-h-[120px] min-w-[300px] p-3 rounded-md border border-input bg-white text-gray-900 resize focus:outline-none focus:ring-2 focus:ring-ring shadow-sm"
+              style={{ resize: 'both' }}
+              autoFocus
+            />
+          </div>
         ) : (
           <Input
             type={type}
             value={editedValue}
             onChange={(e) => setEditedValue(e.target.value)}
-            className="min-w-[300px]"
+            className="min-w-[300px] text-gray-900"
             autoFocus
           />
         )}
@@ -75,7 +95,7 @@ export function EditableField({
           >
             {isLoading ? 'Zapisywanie...' : 'Zapisz'}
           </Button>
-          <Button 
+          <Button className='bg-white text-black'
             onClick={() => {
               setIsEditing(false);
               setEditedValue(value);
@@ -93,7 +113,9 @@ export function EditableField({
   return (
     <div className={`flex items-center gap-2 group ${className}`}>
       {icon && <span className="text-blue-500">{icon}</span>}
-      <span className="text-lg">{value}</span>
+      <span className="text-lg">
+        {displayValue || 'Brak daty'}
+      </span>
       <button
         onClick={() => setIsEditing(true)}
         className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded"
